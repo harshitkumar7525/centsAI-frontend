@@ -2,24 +2,17 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { NavItems } from "./NavItems";
 
-import logo from "../../assets/logo.png"
-
+import logo from "../../assets/logo.png";
+import { createPortal } from "react-dom";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
-  return (
+  return createPortal(
     <nav className="bg-white border-gray-200 dark:bg-gray-900">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
         {/* Logo */}
-        <a
-          href="/"
-          className="flex items-center space-x-3 rtl:space-x-reverse"
-        >
-          <img
-            src={logo}
-            className="h-8"
-            alt="Logo"
-          />
+        <a href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
+          <img src={logo} className="h-8" alt="Logo" />
           <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
             centsAI
           </span>
@@ -81,6 +74,7 @@ export default function Navbar() {
           </ul>
         </div>
       </div>
-    </nav>
+    </nav>,
+    document.querySelector("nav")
   );
 }
