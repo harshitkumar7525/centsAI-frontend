@@ -11,8 +11,8 @@ export const NavItems = [
   },
   {
     id: 3,
-    title: "About",
-    link: "/about",
+    title: "Chat",
+    link: "/chat",
   },
   {
     id: 4,
