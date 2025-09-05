@@ -16,7 +16,22 @@ export const NavItems = [
   },
   {
     id: 4,
+    title: "Sign Up",
+    link: "/signup",
+  },
+  {
+    id: 5,
+    title: "Sign In",
+    link: "/signin",
+  },
+  {
+    id: 6,
     title: "Contact",
     link: "/contact",
+  },
+  {
+    id: 7,
+    title: "Logout",
+    link: "/logout",
   },
 ];

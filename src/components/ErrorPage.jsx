@@ -19,7 +19,7 @@ export default function ErrorPage() {
             >
               Go back home
             </NavLink>
-            <NavLink to="#" className="text-sm font-semibold text-white">
+            <NavLink to="/contact" className="text-sm font-semibold text-white">
               Contact support <span aria-hidden="true">&rarr;</span>
             </NavLink>
           </div>
