@@ -12,7 +12,7 @@ export default function Home() {
             Everything you need to manage your expenses
           </p>
           <p className="mt-6 text-lg/8 text-gray-300">
-            Just tell CentsAI what you spent in simple language, like "Rs. 110
+            Just tell CentsAI what you spent in simple language, like "Rs. 100
             spent on food", and let AI handle the rest. Get insights,
             comparisons, and charts that make your financial life simpler.
           </p>

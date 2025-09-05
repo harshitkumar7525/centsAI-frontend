@@ -4,6 +4,10 @@ import ErrorPage from "./components/ErrorPage";
 import UserContext from "./context/userContext";
 import { useState } from "react";
 import Home from "./pages/Home";
+import Chat from "./pages/Chat.jsx";
+import Contact from "./pages/Contact";
+import Dashboard from "./pages/Dashboard";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -13,6 +17,18 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Home />,
+      },
+      {
+        path: "/dashboard",
+        element: <Dashboard />,
+      },
+      {
+        path: "/chat",
+        element: <Chat />,
+      },
+      {
+        path: "/contact",
+        element: <Contact />,
       },
     ],
   },

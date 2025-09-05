@@ -4,7 +4,7 @@ export const features = [
   {
     name: "AI-powered Chat Input",
     description:
-      "Log expenses by simply typing natural prompts like 'Rs. 110 spent on food'. The AI automatically understands and records it under today’s expenses.",
+      "Log expenses by simply typing natural prompts like 'Rs. 100 spent on food'. The AI automatically understands and records it under today’s expenses.",
     icon: ChatBubbleLeftRightIcon,
   },
   {
