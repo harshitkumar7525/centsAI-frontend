@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { NavItems } from "./NavItems";
-import UserContext from "../../context/userContext";
+import { UserContext } from "../../context/userContext";
 import logo from "../../assets/logo.png";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
