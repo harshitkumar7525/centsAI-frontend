@@ -1,5 +1,4 @@
-import { createContext,useState } from "react";
-
+import { createContext, useState } from "react";
 export const UserContext = createContext({
   user: {
     id: "",
@@ -26,9 +25,7 @@ const UserContextProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={contextValue}>
-      {children}
-    </UserContext.Provider>
+    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
   );
 };
 

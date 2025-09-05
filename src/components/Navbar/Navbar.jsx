@@ -1,11 +1,52 @@
 import { useContext, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { NavItems } from "./NavItems";
 import { UserContext } from "../../context/userContext";
 import logo from "../../assets/logo.png";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
+
+  const [content, updateContent] = useState(
+    <>
+      <span className="block py-2 px-3 rounded-sm md:p-0 text-gray-900 dark:text-white">
+        {user.username}
+      </span>
+    </>
+  );
+
+  function handleMouseEnter() {
+    updateContent(
+      <>
+        <button
+          onClick={handleLogout}
+          className="block py-2 px-3 rounded-sm md:p-0 text-gray-900 dark:text-white"
+        >
+          Logout
+        </button>
+      </>
+    );
+  }
+  function handleMouseLeave() {
+    updateContent(
+      <>
+        <span className="block py-2 px-3 rounded-sm md:p-0 text-gray-900 dark:text-white">
+          {user.username}
+        </span>
+      </>
+    );
+  }
+
+  const navigate = useNavigate();
+  function handleLogout() {
+    setUser({
+      id: "",
+      username: "",
+    });
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userData");
+    navigate("/");
+  }
   return (
     <nav className="bg-white border-gray-200 dark:bg-gray-900">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
@@ -75,6 +116,16 @@ export default function Navbar() {
                   </NavLink>
                 </li>
               )
+            )}
+            {user.id && (
+              <>
+                <li
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  {content}
+                </li>
+              </>
             )}
           </ul>
         </div>

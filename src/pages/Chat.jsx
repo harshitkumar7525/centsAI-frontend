@@ -11,7 +11,7 @@ function Chat() {
       alert("Kindly login to access the chat feature.");
       navigate("/signin");
     }
-  }, []);
+  }, [user]);
   return (
     <>
       <div className="fixed bottom-0 right-0 left-0 mb-4 flex justify-center">
