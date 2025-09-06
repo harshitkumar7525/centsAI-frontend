@@ -1,15 +1,22 @@
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "../context/userContext";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 const SignUp = () => {
-  const { setUser } = useContext(UserContext);
+  const navigate = useNavigate();
+  const { user, setUser } = useContext(UserContext);
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
-  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user && user.id) {
+      navigate("/dashboard");
+    }
+  }, [user, setUser]);
+
   const onSubmit = (data) => {
     console.log("Sign Up Data:", data);
     navigate("/dashboard");
@@ -22,7 +29,31 @@ const SignUp = () => {
           Create Your Account
         </h2>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Email input field */}
+          {/* Username input field */}
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-400"
+            >
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              className="mt-1 block w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+              {...register("username", {
+                required: {
+                  value: true,
+                  message: "Username is required",
+                },
+              })}
+            />
+            {errors.username && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.username.message}
+              </p>
+            )}
+          </div>
           <div>
             <label
               htmlFor="email"
