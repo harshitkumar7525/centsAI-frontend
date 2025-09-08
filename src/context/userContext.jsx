@@ -5,18 +5,14 @@ import api from "../../apiCall.js";
 export const UserContext = createContext({
   user: { id: "", username: "" },
   setUser: () => {},
-  aiResponses: [],
-  setAiResponses: () => {},
-  userMessages: [],
-  setUserMessages: () => {},
+  chats: [],
+  setChats: () => {},
   api: () => {},
 });
 
 const UserContextProvider = ({ children }) => {
   const [user, setUser] = useState({ id: "", username: "" });
-  const [aiResponses, setAiResponses] = useState([]);
-  const [userMessages, setUserMessages] = useState([]);
-
+  const [chats, setChats] = useState([]);
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -37,10 +33,8 @@ const UserContextProvider = ({ children }) => {
   const contextValue = {
     user,
     setUser,
-    aiResponses,
-    setAiResponses,
-    userMessages,
-    setUserMessages,
+    chats,
+    setChats,
     api,
   };
 
