@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { NavItems } from "./NavItems";
 import { UserContext } from "../../context/userContext";
@@ -7,13 +7,22 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, setUser } = useContext(UserContext);
 
-  const [content, updateContent] = useState(
-    <>
-      <span className="block py-2 px-3 rounded-sm md:p-0 text-gray-900 dark:text-white">
-        {user.username}
-      </span>
-    </>
-  );
+  const [content, updateContent] = useState();
+
+  const fetchContent = () => {
+    if (user.id) {
+      updateContent(
+        <>
+          <span className="block py-2 px-3 rounded-sm md:p-0 text-gray-900 dark:text-white">
+            {user.username}
+          </span>
+        </>
+      );
+    }
+  };
+  useEffect(() => {
+    fetchContent();
+  }, [user, setUser]);
 
   function handleMouseEnter() {
     updateContent(
@@ -43,8 +52,7 @@ export default function Navbar() {
       id: "",
       username: "",
     });
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userData");
+    localStorage.removeItem("token");
     navigate("/");
   }
   return (
@@ -117,7 +125,7 @@ export default function Navbar() {
                 </li>
               )
             )}
-            {user.id && (
+            {user && user.username && (
               <>
                 <li
                   onMouseEnter={handleMouseEnter}

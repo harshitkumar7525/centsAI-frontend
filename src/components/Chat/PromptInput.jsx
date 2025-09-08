@@ -1,13 +1,14 @@
-import axios from "axios";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useForm } from "react-hook-form";
+import { UserContext } from "../../context/userContext";
 export default function PromptInput() {
   const { register, handleSubmit, reset } = useForm();
   const [isLoading, setIsLoading] = useState(false);
+  const { api } = useContext(UserContext);
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      const response = await axios.post("http://localhost:3000/putdata", data);
+      const response = await api.post("/api/putdata", data);
       if (response.status !== 200) {
         console.error("Error submitting prompt:", response.statusText);
         return;
