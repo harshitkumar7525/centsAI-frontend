@@ -1,10 +1,9 @@
-import { createContext, useState } from "react";
-import api from "../../apiCall.js"
+import { createContext, useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
+import api from "../../apiCall.js";
+
 export const UserContext = createContext({
-  user: {
-    id: "",
-    username: "",
-  },
+  user: { id: "", username: "" },
   setUser: () => {},
   aiResponses: [],
   setAiResponses: () => {},
@@ -12,10 +11,29 @@ export const UserContext = createContext({
   setUserMessages: () => {},
   api: () => {},
 });
+
 const UserContextProvider = ({ children }) => {
   const [user, setUser] = useState({ id: "", username: "" });
   const [aiResponses, setAiResponses] = useState([]);
   const [userMessages, setUserMessages] = useState([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const storedUser = jwtDecode(token);
+
+        if (storedUser?.id && storedUser?.username) {
+          setUser({ id: storedUser.id, username: storedUser.username });
+        }
+      } catch (err) {
+        console.error("Invalid token:", err);
+        localStorage.removeItem("token");
+        window.location.href = "/signin";
+      }
+    }
+  }, []);
+
   const contextValue = {
     user,
     setUser,
@@ -27,7 +45,9 @@ const UserContextProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
+    <UserContext.Provider value={contextValue}>
+      {children}
+    </UserContext.Provider>
   );
 };
 
