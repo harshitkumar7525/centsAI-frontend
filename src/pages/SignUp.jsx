@@ -32,7 +32,7 @@ const SignUp = () => {
 
   const onSubmit = (data) => {
     axios
-      .post("http://localhost:3000/users/signup", data)
+      .post("https://centsai-backend.onrender.com/users/signup", data)
       .then((response) => {
         localStorage.setItem("token", response.data.token);
         setUser({
