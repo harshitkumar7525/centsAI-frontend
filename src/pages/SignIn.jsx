@@ -28,7 +28,7 @@ const SignIn = () => {
 
   const onSubmit = (data) => {
     axios
-      .post("http://localhost:3000/users/signin", data)
+      .post("https://centsai-backend.onrender.com/users/signin", data)
       .then((response) => {
         localStorage.setItem("token", response.data.token);
         setUser({
