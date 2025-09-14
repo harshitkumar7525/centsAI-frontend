@@ -14,7 +14,6 @@ import {
   Legend,
 } from "chart.js";
 
-// Register the required components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -28,11 +27,12 @@ ChartJS.register(
 
 const Dashboard = () => {
   const { chats, api } = useContext(UserContext);
+
   const [dashboardData, setDashboardData] = useState({
     totalExpenses: 0,
     expensesThisMonth: 0,
     mostSpending: { category: "", amount: 0 },
-    monthlyExpenses: {},
+    monthlyExpenses: [],
     expensesByCategory: {},
   });
 
@@ -41,8 +41,9 @@ const Dashboard = () => {
   const [deleting, setDeleting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [filterPeriod, setFilterPeriod] = useState("week"); // default 1 week
 
-  // Fetch data from the API
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -60,13 +61,42 @@ const Dashboard = () => {
     fetchData();
   }, [chats, api]);
 
+  // Recalculate when data or filter changes
   useEffect(() => {
-    processExpenseData(expensesData);
-  }, [expensesData]);
+    const filtered = filterDataByPeriod(expensesData, filterPeriod);
+    processExpenseData(filtered);
+  }, [expensesData, filterPeriod]);
 
+  // Filter data by selected period
+  const filterDataByPeriod = (data, period) => {
+    const now = new Date();
+    let startDate;
+
+    switch (period) {
+      case "week":
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case "15days":
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 15);
+        break;
+      case "month":
+        startDate = new Date();
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case "all":
+      default:
+        return data;
+    }
+
+    return data.filter((expense) => new Date(expense.transactionDate) >= startDate);
+  };
+
+  // Process filtered data
   const processExpenseData = (data) => {
     let total = 0;
-    let monthly = {};
+    let monthly = new Map();
     let byCategory = {};
     let mostSpending = { category: "", amount: 0 };
     const now = new Date();
@@ -78,14 +108,15 @@ const Dashboard = () => {
       const amount = expense.amount;
       const category = expense.category;
       const transactionDate = new Date(expense.transactionDate);
+
       const monthYear = `${transactionDate.toLocaleString("default", {
         month: "short",
       })} ${transactionDate.getFullYear()}`;
 
       total += amount;
 
-      if (!monthly[monthYear]) monthly[monthYear] = 0;
-      monthly[monthYear] += amount;
+      if (!monthly.has(monthYear)) monthly.set(monthYear, 0);
+      monthly.set(monthYear, monthly.get(monthYear) + amount);
 
       if (!byCategory[category]) byCategory[category] = 0;
       byCategory[category] += amount;
@@ -102,11 +133,16 @@ const Dashboard = () => {
       }
     });
 
+    // Sort months chronologically
+    const sortedMonthly = Array.from(monthly.entries()).sort(
+      ([a], [b]) => new Date(a) - new Date(b)
+    );
+
     setDashboardData({
       totalExpenses: total,
-      expensesThisMonth: expensesThisMonth,
-      mostSpending: mostSpending,
-      monthlyExpenses: monthly,
+      expensesThisMonth,
+      mostSpending,
+      monthlyExpenses: sortedMonthly,
       expensesByCategory: byCategory,
     });
   };
@@ -119,13 +155,6 @@ const Dashboard = () => {
       await api.delete(`/transactions/${id}`);
       const updatedExpenses = expensesData.filter((item) => item._id !== id);
       setExpenseData(updatedExpenses);
-      // Re-fetch data to ensure consistency
-      const response = await api.get("/dashboard");
-      setExpenseData(response.data.transactions || response.data);
-      const sortedData = [
-        ...(response.data.transactions || response.data),
-      ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setLatestExpenses(sortedData.slice(0, 5));
     } catch (error) {
       console.error("Error deleting entry:", error);
     } finally {
@@ -136,7 +165,7 @@ const Dashboard = () => {
   const handleEdit = (transaction) => {
     setEditingTransaction({
       ...transaction,
-      date: transaction.transactionDate.split("T")[0], // Format date for input field
+      date: transaction.transactionDate.split("T")[0],
     });
     setIsModalOpen(true);
   };
@@ -151,25 +180,20 @@ const Dashboard = () => {
       };
       await api.put(`/transactions/${editingTransaction._id}`, updatedData);
       setIsModalOpen(false);
-      // Re-fetch data to reflect changes
       const response = await api.get("/dashboard");
-      const fetchedData = response.data.transactions || response.data;
-      setExpenseData(fetchedData);
-      const sortedData = [...fetchedData].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      setLatestExpenses(sortedData.slice(0, 5));
+      setExpenseData(response.data.transactions || response.data);
     } catch (error) {
       console.error("Error updating transaction:", error);
     }
   };
 
+  // Chart Data
   const lineChartData = {
-    labels: Object.keys(dashboardData.monthlyExpenses),
+    labels: dashboardData.monthlyExpenses.map(([month]) => month),
     datasets: [
       {
         label: "Expenses",
-        data: Object.values(dashboardData.monthlyExpenses),
+        data: dashboardData.monthlyExpenses.map(([_, amount]) => amount),
         borderColor: "rgb(59, 130, 246)",
         backgroundColor: "rgba(59, 130, 246, 0.5)",
         tension: 0.4,
@@ -252,14 +276,9 @@ const Dashboard = () => {
       tooltip: {
         callbacks: {
           label: (context) => {
-            const total = context.dataset.data.reduce(
-              (sum, val) => sum + val,
-              0
-            );
+            const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
             const percentage = ((context.raw / total) * 100).toFixed(1);
-            return `${
-              context.label
-            }: ₹${context.raw.toLocaleString()} (${percentage}%)`;
+            return `${context.label}: ₹${context.raw.toLocaleString()} (${percentage}%)`;
           },
         },
       },
@@ -269,27 +288,46 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-8">
       <h1 className="text-3xl font-bold mb-8">Expenses Analysis</h1>
+
+      {/* Filter buttons */}
+      <div className="flex gap-2 mb-6">
+        {["week", "15days", "month", "all"].map((period) => (
+          <button
+            key={period}
+            onClick={() => setFilterPeriod(period)}
+            className={`px-3 py-1 rounded-md ${
+              filterPeriod === period
+                ? "bg-blue-600 text-white"
+                : "bg-gray-700 text-gray-300"
+            }`}
+          >
+            {period === "week"
+              ? "1 Week"
+              : period === "15days"
+              ? "15 Days"
+              : period === "month"
+              ? "1 Month"
+              : "All Time"}
+          </button>
+        ))}
+      </div>
+
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-400 mb-2">
-            Total Expenses
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-400 mb-2">Total Expenses</h2>
           <p className="text-4xl font-bold text-gray-50">
             ₹{dashboardData.totalExpenses.toLocaleString()}
           </p>
         </div>
         <div className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-400 mb-2">
-            Expenses This Month
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-400 mb-2">Expenses This Month</h2>
           <p className="text-4xl font-bold text-gray-50">
             ₹{dashboardData.expensesThisMonth.toLocaleString()}
           </p>
         </div>
         <div className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-400 mb-2">
-            Most Spending
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-400 mb-2">Most Spending</h2>
           <p className="text-2xl font-bold text-red-500">
             {dashboardData.mostSpending.category || "N/A"}
           </p>
@@ -298,65 +336,41 @@ const Dashboard = () => {
           </p>
         </div>
       </div>
+
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-50 mb-4">
-            Month Wise Expenses
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-50 mb-4">Time Wise Expenses</h2>
           <div className="h-96">
             <Line data={lineChartData} options={lineChartOptions} />
           </div>
         </div>
         <div className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-50 mb-4">
-            Expenses Breakdown
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-50 mb-4">Expenses Breakdown</h2>
           <div className="h-96 flex justify-center items-center">
             <Pie data={pieChartData} options={pieChartOptions} />
           </div>
         </div>
       </div>
+
+      {/* Latest Entries */}
       <div className="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700 mt-8">
-        <h2 className="text-lg font-semibold text-gray-50 mb-4">
-          Latest 5 Entries
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-50 mb-4">Latest 5 Entries</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-700">
             <thead className="bg-gray-700">
               <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
-                >
-                  Category
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
-                >
-                  Amount
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
-                >
-                  Date
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-gray-800 divide-y divide-gray-700">
               {latestExpenses.length > 0 ? (
                 latestExpenses.map((expense) => (
                   <tr key={expense._id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      {expense.category}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{expense.category}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       ₹{expense.amount.toLocaleString()}
                     </td>
@@ -381,10 +395,7 @@ const Dashboard = () => {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="4"
-                    className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500"
-                  >
+                  <td colSpan="4" className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
                     No recent entries found.
                   </td>
                 </tr>
@@ -394,13 +405,12 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-50">
-                Edit Transaction
-              </h3>
+              <h3 className="text-xl font-bold text-gray-50">Edit Transaction</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-400 hover:text-gray-200"
@@ -410,51 +420,36 @@ const Dashboard = () => {
             </div>
             <form onSubmit={handleUpdate}>
               <div className="mb-4">
-                <label className="block text-gray-300 text-sm font-medium mb-1">
-                  Amount
-                </label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Amount</label>
                 <input
                   type="number"
                   value={editingTransaction.amount}
                   onChange={(e) =>
-                    setEditingTransaction({
-                      ...editingTransaction,
-                      amount: e.target.value,
-                    })
+                    setEditingTransaction({ ...editingTransaction, amount: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-gray-700 text-gray-100 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-300 text-sm font-medium mb-1">
-                  Date
-                </label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Date</label>
                 <input
                   type="date"
                   value={editingTransaction.date}
                   onChange={(e) =>
-                    setEditingTransaction({
-                      ...editingTransaction,
-                      date: e.target.value,
-                    })
+                    setEditingTransaction({ ...editingTransaction, date: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-gray-700 text-gray-100 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-300 text-sm font-medium mb-1">
-                  Category
-                </label>
+                <label className="block text-gray-300 text-sm font-medium mb-1">Category</label>
                 <input
                   type="text"
                   value={editingTransaction.category}
                   onChange={(e) =>
-                    setEditingTransaction({
-                      ...editingTransaction,
-                      category: e.target.value,
-                    })
+                    setEditingTransaction({ ...editingTransaction, category: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-gray-700 text-gray-100 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
