@@ -64,7 +64,7 @@ const Dashboard = () => {
   // Recalculate when data or filter changes
   useEffect(() => {
     const filtered = filterDataByPeriod(expensesData, filterPeriod);
-    processExpenseData(filtered);
+    processExpenseData(filtered, filterPeriod);
   }, [expensesData, filterPeriod]);
 
   // Filter data by selected period
@@ -75,11 +75,11 @@ const Dashboard = () => {
     switch (period) {
       case "week":
         startDate = new Date();
-        startDate.setDate(now.getDate() - 7);
+        startDate.setDate(now.getDate() - 6);
         break;
       case "15days":
         startDate = new Date();
-        startDate.setDate(now.getDate() - 15);
+        startDate.setDate(now.getDate() - 14);
         break;
       case "month":
         startDate = new Date();
@@ -90,13 +90,15 @@ const Dashboard = () => {
         return data;
     }
 
-    return data.filter((expense) => new Date(expense.transactionDate) >= startDate);
+    return data.filter(
+      (expense) => new Date(expense.transactionDate) >= startDate
+    );
   };
 
   // Process filtered data
-  const processExpenseData = (data) => {
+  const processExpenseData = (data, period) => {
     let total = 0;
-    let monthly = new Map();
+    let daily = new Map();
     let byCategory = {};
     let mostSpending = { category: "", amount: 0 };
     const now = new Date();
@@ -104,19 +106,18 @@ const Dashboard = () => {
     const currentYear = now.getFullYear();
     let expensesThisMonth = 0;
 
+    // Step 1: Aggregate by date (YYYY-MM-DD)
     data.forEach((expense) => {
       const amount = expense.amount;
       const category = expense.category;
       const transactionDate = new Date(expense.transactionDate);
 
-      const monthYear = `${transactionDate.toLocaleString("default", {
-        month: "short",
-      })} ${transactionDate.getFullYear()}`;
+      const dayKey = transactionDate.toISOString().split("T")[0];
 
       total += amount;
 
-      if (!monthly.has(monthYear)) monthly.set(monthYear, 0);
-      monthly.set(monthYear, monthly.get(monthYear) + amount);
+      if (!daily.has(dayKey)) daily.set(dayKey, 0);
+      daily.set(dayKey, daily.get(dayKey) + amount);
 
       if (!byCategory[category]) byCategory[category] = 0;
       byCategory[category] += amount;
@@ -133,8 +134,35 @@ const Dashboard = () => {
       }
     });
 
-    // Sort months chronologically
-    const sortedMonthly = Array.from(monthly.entries()).sort(
+    // Step 2: Decide range to fill missing days
+    let startDate, endDate;
+    if (data.length > 0) {
+      endDate = new Date(); // today
+      startDate = new Date(endDate);
+
+      if (period === "week") startDate.setDate(endDate.getDate() - 6);
+      else if (period === "15days") startDate.setDate(endDate.getDate() - 14);
+      else if (period === "month") startDate.setMonth(endDate.getMonth() - 1);
+      else {
+        // "all" → use min & max from data
+        const sortedDates = [...daily.keys()].sort(
+          (a, b) => new Date(a) - new Date(b)
+        );
+        startDate = new Date(sortedDates[0]);
+        endDate = new Date(sortedDates[sortedDates.length - 1]);
+      }
+
+      // Step 3: Fill missing days with 0
+      let cursor = new Date(startDate);
+      while (cursor <= endDate) {
+        const key = cursor.toISOString().split("T")[0];
+        if (!daily.has(key)) daily.set(key, 0);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+
+    // Step 4: Sort chronologically
+    const sortedDaily = Array.from(daily.entries()).sort(
       ([a], [b]) => new Date(a) - new Date(b)
     );
 
@@ -142,7 +170,7 @@ const Dashboard = () => {
       totalExpenses: total,
       expensesThisMonth,
       mostSpending,
-      monthlyExpenses: sortedMonthly,
+      monthlyExpenses: sortedDaily, // now daily data
       expensesByCategory: byCategory,
     });
   };
@@ -189,14 +217,19 @@ const Dashboard = () => {
 
   // Chart Data
   const lineChartData = {
-    labels: dashboardData.monthlyExpenses.map(([month]) => month),
+    labels: dashboardData.monthlyExpenses.map(([day]) =>
+      new Date(day).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+      })
+    ),
     datasets: [
       {
-        label: "Expenses",
+        label: "Daily Expenses",
         data: dashboardData.monthlyExpenses.map(([_, amount]) => amount),
         borderColor: "rgb(59, 130, 246)",
         backgroundColor: "rgba(59, 130, 246, 0.5)",
-        tension: 0.4,
+        tension: 0.3,
         fill: true,
       },
     ],
@@ -459,15 +492,15 @@ const Dashboard = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="mr-2 px-4 py-2 text-gray-400 rounded-md hover:bg-gray-700 transition-colors"
+                  className="mr-2 px-4 py-2 bg-gray-600 text-gray-100 rounded-md hover:bg-gray-500"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
                 >
-                  Save Changes
+                  Update
                 </button>
               </div>
             </form>
