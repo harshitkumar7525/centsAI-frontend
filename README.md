@@ -278,7 +278,7 @@ This project is licensed under the MIT License.
 
 For issues, questions, or feature requests:
 - Open an issue on [GitHub Issues](https://github.com/harshitkumar7525/centsai-finance-hub/issues)
-- Email: harshitkumar7525@gmail.com
+- Email: harshitkumarhk1290@gmail.com
 
 ---
 
