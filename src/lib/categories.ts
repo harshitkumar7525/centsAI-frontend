@@ -84,6 +84,7 @@ export const categoryList = [
   "Transportation",
   "Entertainment",
   "Groceries",
+  "Education",
   "Shopping",
   "Utilities",
   "Health",
