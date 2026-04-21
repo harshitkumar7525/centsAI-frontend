@@ -47,7 +47,7 @@ interface TransactionListProps {
 
 export function TransactionList({ expenses, onUpdate }: TransactionListProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const [deletingExpenseId, setDeletingExpenseId] = useState<number | null>(null);
+  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editDate, setEditDate] = useState("");
